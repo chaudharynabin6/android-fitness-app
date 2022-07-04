@@ -77,13 +77,14 @@ class TrackingService : LifecycleService() {
                     }
                     else{
                         Timber.e("service resumed")
+                        startForegroundService()
                     }
 
 
                 }
                 ACTION_PAUSE_SERVICE -> {
                     Timber.e("service  paused")
-
+                    pauseTracking()
                 }
                 ACTION_STOP_SERVICE -> {
                     Timber.e("service stopped")
@@ -95,17 +96,32 @@ class TrackingService : LifecycleService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    private fun pauseTracking() {
+        isTracking.postValue(false)
+    }
+
     // adding polyline point as the last of the pathPoints
     fun addPathPoint(location: Location?) {
         location?.let {
             val position = LatLng(location.latitude, location.longitude)
             pathPoints.value?.let { polyLineList ->
+                try {
+                    val polyline: Polyline = polyLineList.last()
+                    polyline.add(position)
 
-                val polyline: Polyline = polyLineList.last()
-//               inserting co-ordinate
-                polyline.add(position)
+                    pathPoints.postValue(polyLineList)
+                } catch (
+                    e: NoSuchElementException
+                ) {
+                    addEmptyPolyline()
+                    val polyline: Polyline = polyLineList.last()
 
-                pathPoints.postValue(polyLineList)
+                    polyline.add(position)
+
+                    pathPoints.postValue(polyLineList)
+                }
+
+
             }
         }
     }
