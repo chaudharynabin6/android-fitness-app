@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.androiddevs.runningappyt.R
 import com.androiddevs.runningappyt.other.Constants
@@ -12,11 +14,13 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ServiceComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
+import dagger.hilt.components.SingletonComponent
 
 @Module
-@InstallIn(ServiceModule::class)
+@InstallIn(ServiceComponent::class)
 object ServiceModule {
 
     @Provides
@@ -27,7 +31,8 @@ object ServiceModule {
         return FusedLocationProviderClient(context)
     }
 
-    @SuppressLint("UnspecifiedImmutableFlag")
+
+    @RequiresApi(Build.VERSION_CODES.M)
     @Provides
     @ServiceScoped
     fun providesMainActivityPendingIntent(
@@ -39,7 +44,7 @@ object ServiceModule {
             Intent(context, MainActivity::class.java).also {
                 it.action = Constants.ACTION_SHOW_TRACKING_FRAGMENT
             },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
 
@@ -47,7 +52,7 @@ object ServiceModule {
     @ServiceScoped
     fun provideBaseNotificationBuilder(
         @ApplicationContext context: Context,
-        pendingIntent: PendingIntent
+        pendingIntent: PendingIntent?
     ): NotificationCompat.Builder {
         return NotificationCompat.Builder(
             context,
