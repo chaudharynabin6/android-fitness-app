@@ -34,18 +34,25 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 typealias  Polyline = MutableList<LatLng>
 typealias  PolyLineList = MutableList<Polyline>
 
+@AndroidEntryPoint
 class TrackingService : LifecycleService() {
-
+    @Inject
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
+    @Inject
+    private lateinit var baseNotificationBuilder: NotificationCompat.Builder
+
     private var isFirstRun = true
 
     private val timeRunInSeconds = MutableLiveData<Long>()
@@ -227,33 +234,12 @@ class TrackingService : LifecycleService() {
             createNotificationChannel(notificationManager)
         }
 
-        val notificationBuilder = NotificationCompat.Builder(
-            this,
-            Constants.NOTIFICATION_CHANNEL_ID
-        ).setAutoCancel(false)
-            .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_directions_run_black_24dp)
-            .setContentTitle("Running App")
-            .setContentText("00:00:00")
-            .setContentIntent(getMainActivityPendingIntent())
-
         startForeground(
             NOTIFICATION_ID,
-            notificationBuilder.build()
+            baseNotificationBuilder.build()
         )
     }
 
-    @SuppressLint("UnspecifiedImmutableFlag")
-    private fun getMainActivityPendingIntent(): PendingIntent? {
-        return PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this,MainActivity::class.java).also {
-                it.action = ACTION_SHOW_TRACKING_FRAGMENT
-            },
-            FLAG_UPDATE_CURRENT
-        )
-    }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(notificationManager : NotificationManager){
         val channel = NotificationChannel(
