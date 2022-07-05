@@ -52,7 +52,7 @@ class TrackingService : LifecycleService() {
 //        initially is tracking false
         isTracking.postValue(false)
 //        initially there is no tracking data
-        pathPoints.postValue(mutableListOf())
+        pathPoints.postValue(mutableListOf(mutableListOf()))
     }
 
     override fun onCreate() {
