@@ -11,10 +11,10 @@ import com.androiddevs.runningappyt.other.Constants.ACTION_START_OR_RESUME_SERVI
 import com.androiddevs.runningappyt.other.Constants.MAP_ZOOM
 import com.androiddevs.runningappyt.other.Constants.POLYLINE_COLOR
 import com.androiddevs.runningappyt.other.Constants.POLYLINE_WIDTH
+import com.androiddevs.runningappyt.other.TimeFormatterUtility
 import com.androiddevs.runningappyt.service.Polyline
 import com.androiddevs.runningappyt.service.TrackingService
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
-import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.PolylineOptions
@@ -29,6 +29,8 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
     private  var map: GoogleMap? = null
     private var isTracking = false
     private var pathPoints = mutableListOf<Polyline>()
+
+    private var currentTimeMillis = 0L
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mapView?.onCreate(savedInstanceState)
@@ -54,6 +56,11 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
             pathPoints = it
             addLatestPolyline()
             moveCameraToUserLocation()
+        }
+        TrackingService.timeRunInMillis.observe(viewLifecycleOwner){
+            currentTimeMillis = it
+            val formattedTime = TimeFormatterUtility.getFormattedStopWatchTime(ms = currentTimeMillis, isMillisIncluded = true)
+            tvTimer.text = formattedTime
         }
     }
     private fun moveCameraToUserLocation(){
