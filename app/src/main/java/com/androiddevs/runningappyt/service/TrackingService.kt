@@ -53,6 +53,7 @@ class TrackingService : LifecycleService() {
     lateinit var baseNotificationBuilder: NotificationCompat.Builder
 
     private var isFirstRun = true
+    private var isServiceKilled = false
 
     private val timeRunInSeconds = MutableLiveData<Long>()
 
@@ -107,7 +108,7 @@ class TrackingService : LifecycleService() {
                 }
                 ACTION_STOP_SERVICE -> {
                     Timber.e("service stopped")
-
+                    killService()
                 }
             }
 
@@ -240,15 +241,18 @@ class TrackingService : LifecycleService() {
             NOTIFICATION_ID,
             baseNotificationBuilder.build()
         )
+//        handle notification carefully
         timeRunInSeconds.observe(this) {
-            val notification = currentNotificationBuilder
-                .setContentText(
-                    TimeFormatterUtility.getFormattedStopWatchTime(it * 1000L)
+            if (!isServiceKilled) {
+                val notification = currentNotificationBuilder
+                    .setContentText(
+                        TimeFormatterUtility.getFormattedStopWatchTime(it * 1000L)
+                    )
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    notification.build()
                 )
-            notificationManager.notify(
-                NOTIFICATION_ID,
-                notification.build()
-            )
+            }
         }
     }
 
@@ -292,13 +296,24 @@ class TrackingService : LifecycleService() {
             isAccessible = true
             set(currentNotificationBuilder, ArrayList<NotificationCompat.Action>())
         }
+        if (!isServiceKilled) {
 
-        currentNotificationBuilder = currentNotificationBuilder
-            .addAction(
-                R.drawable.ic_pause_black_24dp,
-                notificationActionText,
-                pendingIntent
-            )
-        notificationManager.notify(NOTIFICATION_ID, currentNotificationBuilder.build())
+            currentNotificationBuilder = currentNotificationBuilder
+                .addAction(
+                    R.drawable.ic_pause_black_24dp,
+                    notificationActionText,
+                    pendingIntent
+                )
+            notificationManager.notify(NOTIFICATION_ID, currentNotificationBuilder.build())
+        }
+    }
+
+    private fun killService() {
+        isServiceKilled = true
+        isFirstRun = true
+        pauseService()
+        postInitialValues()
+        stopForeground(true)
+        stopSelf()
     }
 }
