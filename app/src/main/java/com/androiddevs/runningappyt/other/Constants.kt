@@ -32,4 +32,9 @@ object Constants {
 //    timer
     const val TIMER_UPDATE_INTERVAl = 50L
 
+//    shared preference
+    const val SHARED_PREFERENCE_NAME = "SHARED_PREFERENCE_NAME"
+    const val KEY_FIRST_TIME_TOGGLE = "KEY_FIRST_TIME_TOGGLE"
+    const val KEY_NAME  = "KEY_NAME"
+    const val KEY_WEIGHT = "KEY_WEIGHT"
 }

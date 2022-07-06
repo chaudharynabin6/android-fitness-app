@@ -1,6 +1,7 @@
 package com.androiddevs.runningappyt.ui
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -11,11 +12,13 @@ import com.androiddevs.runningappyt.other.Constants
 import com.androiddevs.runningappyt.ui.fragments.TrackingFragmentDirections
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-
+    @Inject
+    lateinit var sharedPref : SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +27,10 @@ class MainActivity : AppCompatActivity() {
         navigateToTrackingFragmentIfNeeded(intent)
         setSupportActionBar(toolbar)
         bottomNavigationView.setupWithNavController(navController = navHostFragment.findNavController())
+
+        val name: String = sharedPref.getString(Constants.KEY_NAME, "") ?: "Running App"
+        val toolbarText = "Let's go $name"
+        tvToolbarTitle.text = toolbarText
 
         navHostFragment.findNavController()
             .addOnDestinationChangedListener { controller, destination, arguments ->

@@ -1,6 +1,7 @@
 package com.androiddevs.runningappyt.ui.fragments
 
 import android.Manifest
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -11,20 +12,27 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.androiddevs.runningappyt.R
 import com.androiddevs.runningappyt.adapters.RunAdapter
+import com.androiddevs.runningappyt.other.Constants
 import com.androiddevs.runningappyt.other.Constants.REQUEST_CODE_LOCATION_PERMISSION
 import com.androiddevs.runningappyt.other.SortType
 import com.androiddevs.runningappyt.other.TrackingPermissionUtility
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_run.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionCallbacks {
 
     private val viewModel: MainViewModel by viewModels()
     private lateinit var runAdapter: RunAdapter
+
+
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requestPermission()

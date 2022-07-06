@@ -2,6 +2,7 @@ package com.androiddevs.runningappyt.ui.fragments
 
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.location.Location
 import android.os.Bundle
 import android.view.*
@@ -14,6 +15,7 @@ import com.androiddevs.runningappyt.db.Run
 import com.androiddevs.runningappyt.other.Constants.ACTION_PAUSE_SERVICE
 import com.androiddevs.runningappyt.other.Constants.ACTION_START_OR_RESUME_SERVICE
 import com.androiddevs.runningappyt.other.Constants.ACTION_STOP_SERVICE
+import com.androiddevs.runningappyt.other.Constants.KEY_WEIGHT
 import com.androiddevs.runningappyt.other.Constants.MAP_ZOOM
 import com.androiddevs.runningappyt.other.Constants.POLYLINE_COLOR
 import com.androiddevs.runningappyt.other.Constants.POLYLINE_WIDTH
@@ -33,10 +35,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 import kotlin.math.round
+import kotlin.properties.Delegates
 
 @AndroidEntryPoint
 class TrackingFragment : Fragment(R.layout.fragment_tracking) {
+
+    @Inject
+    lateinit var sharedPreferences: SharedPreferences
+
+    private var weight by Delegates.notNull<Float>()
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -46,7 +55,6 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
 
     private var menu: Menu? = null
 
-    private var weight = 80f
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,6 +62,7 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
         savedInstanceState: Bundle?
     ): View? {
         setHasOptionsMenu(true)
+        weight = sharedPreferences.getFloat(KEY_WEIGHT, 80f)
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 
