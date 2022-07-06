@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.androiddevs.runningappyt.R
 import com.androiddevs.runningappyt.adapters.RunAdapter
 import com.androiddevs.runningappyt.other.Constants.REQUEST_CODE_LOCATION_PERMISSION
+import com.androiddevs.runningappyt.other.SortType
 import com.androiddevs.runningappyt.other.TrackingPermissionUtility
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,8 +29,39 @@ class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionC
         super.onViewCreated(view, savedInstanceState)
         requestPermission()
         funSetupRecyclerView()
-        viewModel.runsSortedByDate.observe(viewLifecycleOwner){
-            runAdapter.submitList(it)
+        viewModel.run.observe(viewLifecycleOwner) {
+           it?.let {
+               runAdapter.submitList(it)
+           }
+        }
+// to save the on rotation
+        when (viewModel.sortType) {
+            SortType.DATE -> spFilter.setSelection(0)
+            SortType.RUNNING_TIME -> spFilter.setSelection(1)
+            SortType.DISTANCE -> spFilter.setSelection(2)
+            SortType.AVG_SPEED -> spFilter.setSelection(3)
+            SortType.CALORIES_BURNED -> spFilter.setSelection(4)
+        }
+
+        spFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                when (position) {
+                    0 -> viewModel.sortRuns(SortType.DATE)
+                    1 -> viewModel.sortRuns(SortType.RUNNING_TIME)
+                    2 -> viewModel.sortRuns(SortType.DISTANCE)
+                    3 -> viewModel.sortRuns(SortType.AVG_SPEED)
+                    4 -> viewModel.sortRuns(SortType.CALORIES_BURNED)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+
+            }
         }
         fab.setOnClickListener {
             val action = RunFragmentDirections.actionRunFragmentToTrackingFragment()
