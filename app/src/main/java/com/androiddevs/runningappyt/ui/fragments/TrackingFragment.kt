@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.androiddevs.runningappyt.R
 import com.androiddevs.runningappyt.db.Run
@@ -28,6 +29,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_tracking.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.round
 
@@ -61,9 +65,17 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
         btnToggleRun.setOnClickListener {
             toggleRun()
         }
-        btnFinishRun.setOnClickListener{
-            zoomToSeeWholeTrack()
-            endRunAndSaveToDb()
+        btnFinishRun.setOnClickListener {
+            try {
+                zoomToSeeWholeTrack()
+                endRunAndSaveToDb()
+            } catch (
+                e: IllegalStateException
+            ) {
+                e.printStackTrace()
+                stopRun()
+            }
+
         }
         mapView.getMapAsync {
             map = it
@@ -222,30 +234,34 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
         )
     }
 
-    private fun endRunAndSaveToDb(){
-        map?.snapshot {
+    private fun endRunAndSaveToDb() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            delay(2000)
+            map?.snapshot {
                 var distanceInMeter = 0
-            for(polyline in pathPoints){
-                distanceInMeter += calculatePolyline(polyline).toInt()
+                for (polyline in pathPoints) {
+                    distanceInMeter += calculatePolyline(polyline).toInt()
+                }
+                val avgSpeed =
+                    round((distanceInMeter / 1000f) / (currentTimeMillis / 1000f / 60f / 60f) * 10) / 10f
+
+                val dateTimeStamp = Calendar.getInstance().timeInMillis
+                val caloriesBurned = ((distanceInMeter / 1000f) * weight).toInt()
+                val run = Run(
+                    img = it,
+                    timestamp = dateTimeStamp,
+                    avgSpeedInKM = avgSpeed,
+                    timeInMillis = currentTimeMillis,
+                    caloriesBurned = caloriesBurned
+                )
+                viewModel.insertRun(run)
+
+                Snackbar.make(
+                    requireActivity().findViewById(R.id.rootView),
+                    "Run saved successfully",
+                    Snackbar.LENGTH_LONG
+                ).show()
             }
-            val avgSpeed = round ((distanceInMeter/1000f) / (currentTimeMillis / 1000f / 60f / 60f) * 10) / 10f
-
-            val dateTimeStamp = Calendar.getInstance().timeInMillis
-            val caloriesBurned = ((distanceInMeter / 1000f) * weight).toInt()
-            val run = Run(
-                img = it,
-                timestamp = dateTimeStamp,
-                avgSpeedInKM = avgSpeed,
-                timeInMillis = currentTimeMillis,
-                caloriesBurned = caloriesBurned
-            )
-            viewModel.insertRun(run)
-
-            Snackbar.make(
-                requireActivity().findViewById(R.id.rootView),
-                "Run saved successfully",
-                Snackbar.LENGTH_LONG
-            ).show()
             stopRun()
         }
     }
@@ -300,6 +316,7 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
 
     override fun onLowMemory() {
         super.onLowMemory()
+        mapView?.onLowMemory()
     }
 
     override fun onDestroy() {
