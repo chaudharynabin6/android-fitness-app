@@ -2,12 +2,14 @@ package com.androiddevs.runningappyt.ui.fragments
 
 import android.content.DialogInterface
 import android.content.Intent
+import android.location.Location
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.androiddevs.runningappyt.R
+import com.androiddevs.runningappyt.db.Run
 import com.androiddevs.runningappyt.other.Constants.ACTION_PAUSE_SERVICE
 import com.androiddevs.runningappyt.other.Constants.ACTION_START_OR_RESUME_SERVICE
 import com.androiddevs.runningappyt.other.Constants.ACTION_STOP_SERVICE
@@ -20,10 +22,14 @@ import com.androiddevs.runningappyt.service.TrackingService
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_tracking.*
+import java.util.*
+import kotlin.math.round
 
 @AndroidEntryPoint
 class TrackingFragment : Fragment(R.layout.fragment_tracking) {
@@ -35,6 +41,8 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
     private var pathPoints = mutableListOf<Polyline>()
 
     private var menu: Menu? = null
+
+    private var weight = 80f
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -53,7 +61,10 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
         btnToggleRun.setOnClickListener {
             toggleRun()
         }
-
+        btnFinishRun.setOnClickListener{
+            zoomToSeeWholeTrack()
+            endRunAndSaveToDb()
+        }
         mapView.getMapAsync {
             map = it
             addAllPolyLines()
@@ -192,7 +203,73 @@ class TrackingFragment : Fragment(R.layout.fragment_tracking) {
         val action = TrackingFragmentDirections.actionTrackingFragmentToRunFragment()
         findNavController().navigate(action)
     }
+    private fun  zoomToSeeWholeTrack(){
+        val bounds = LatLngBounds.Builder()
 
+        for (polyline in pathPoints){
+            for(pos in polyline){
+                bounds.include(pos)
+            }
+        }
+
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngBounds(
+                bounds.build(),
+                mapView.width,
+                mapView.height,
+                (mapView.height * 0.05f).toInt()
+            )
+        )
+    }
+
+    private fun endRunAndSaveToDb(){
+        map?.snapshot {
+                var distanceInMeter = 0
+            for(polyline in pathPoints){
+                distanceInMeter += calculatePolyline(polyline).toInt()
+            }
+            val avgSpeed = round ((distanceInMeter/1000f) / (currentTimeMillis / 1000f / 60f / 60f) * 10) / 10f
+
+            val dateTimeStamp = Calendar.getInstance().timeInMillis
+            val caloriesBurned = ((distanceInMeter / 1000f) * weight).toInt()
+            val run = Run(
+                img = it,
+                timestamp = dateTimeStamp,
+                avgSpeedInKM = avgSpeed,
+                timeInMillis = currentTimeMillis,
+                caloriesBurned = caloriesBurned
+            )
+            viewModel.insertRun(run)
+
+            Snackbar.make(
+                requireActivity().findViewById(R.id.rootView),
+                "Run saved successfully",
+                Snackbar.LENGTH_LONG
+            ).show()
+            stopRun()
+        }
+    }
+
+    private fun calculatePolyline(polyline: Polyline):Float{
+        var distance = 0f
+        for(i in 0..polyline.size - 2){
+            val pos1 = polyline[i]
+            val pos2 = polyline[i+1]
+
+            val result = FloatArray(1)
+
+            Location.distanceBetween(
+                pos1.latitude,
+                pos2.longitude,
+                pos2.latitude,
+                pos2.longitude,
+                result
+            )
+            distance += result[0]
+
+        }
+        return distance
+    }
     override fun onStart() {
         super.onStart()
         mapView?.onStart()
